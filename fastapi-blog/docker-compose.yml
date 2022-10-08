@@ -1,32 +1,25 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:13-alpine
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    hostname: database_blog
-    environment:
-      - POSTGRES_USER=fastapi_blog
-      - POSTGRES_PASSWORD=fastapi_blog
-      - POSTGRES_DB=fastapi_blog
-
-  web:
-    build:
-      dockerfile: Dockerfile
-    command: uvicorn src.blog.main:app --reload --host 0.0.0.0 --port 8000
-    volumes:
-      - .:/app
-      - /media:/media
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
+  api:
+    build: '.'
     depends_on:
-      - db
+      - postgres
+    ports:
+      - '8000:8000'
+    command: gunicorn -w 1 -k uvicorn.workers.UvicornWorker applications.rest.main:app -b 0.0.0.0:8000 --disable-redirect-access-to-syslog
 
+  postgres:
+    image: postgres:latest
+    restart: always
+    ports:
+      - '27017-27019:27017-27019'
+    volumes:
+      - blog-postgres:/data
+    environment:
+        POSTGRES_INITDB_ROOT_USERNAME: 'developer'
+        POSTGRES_INITDB_ROOT_PASSWORD: 'nWGfhU5rHBaRtDfGl7RO3wIp7LD82aoOSJx0NlfuCI'
+        POSTGRES_INITDB_DATABASE: 'blog'
 
 volumes:
-  postgres_data:
+  blog-postgres:
